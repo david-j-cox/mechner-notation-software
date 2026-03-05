@@ -8,12 +8,12 @@ interface ArrowConnectorProps {
 }
 
 export function ArrowConnector({ connection, highlighted }: ArrowConnectorProps) {
-  const { x1, y1, x2, y2, negated } = connection;
+  const { x1, y1, x2, y2, negated, scheduleLabel } = connection;
   const color = highlighted ? "#3b82f6" : "#334155";
   const strokeWidth = highlighted ? 2 : 1.5;
-
-  // Arrow marker id unique per connection
   const markerId = `arrow-${connection.id}`;
+  const midX = (x1 + x2) / 2;
+  const midY = (y1 + y2) / 2;
 
   return (
     <g>
@@ -40,13 +40,26 @@ export function ArrowConnector({ connection, highlighted }: ArrowConnectorProps)
       />
       {negated && (
         <text
-          x={(x1 + x2) / 2}
-          y={(y1 + y2) / 2 - 8}
+          x={midX}
+          y={midY - 8}
           textAnchor="middle"
           fontSize={16}
           fill={color}
         >
           ~
+        </text>
+      )}
+      {scheduleLabel && (
+        <text
+          x={midX}
+          y={midY - 8}
+          textAnchor="middle"
+          fontSize={11}
+          fontFamily="sans-serif"
+          fontWeight="600"
+          fill="#6366f1"
+        >
+          {scheduleLabel}
         </text>
       )}
     </g>

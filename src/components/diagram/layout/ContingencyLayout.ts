@@ -1,5 +1,5 @@
 import type { MechnerDiagram, Stimulus } from "@/model/types";
-import { findElementById } from "@/model/contingency";
+import { findElementById, getScheduleNotation } from "@/model/contingency";
 
 export interface PositionedElement {
   id: string;
@@ -19,6 +19,7 @@ export interface PositionedConnection {
   x2: number;
   y2: number;
   negated: boolean;
+  scheduleLabel?: string;
 }
 
 export interface PositionedContingency {
@@ -176,6 +177,15 @@ export function computeLayout(diagram: MechnerDiagram): DiagramLayout {
         const sourceEdges = elementEdges.get(conn.sourceId);
         const targetEdges = elementEdges.get(conn.targetId);
         if (sourceEdges && targetEdges) {
+          // Resolve schedule label if present
+          let scheduleLabel: string | undefined;
+          if (conn.scheduleId) {
+            const schedule = findElementById(diagram.schedules, conn.scheduleId);
+            if (schedule) {
+              scheduleLabel = getScheduleNotation(schedule);
+            }
+          }
+
           connections.push({
             id: conn.id,
             sourceId: conn.sourceId,
@@ -185,6 +195,7 @@ export function computeLayout(diagram: MechnerDiagram): DiagramLayout {
             x2: targetEdges.left.x,
             y2: targetEdges.left.y,
             negated: conn.negated ?? false,
+            scheduleLabel,
           });
         }
       }

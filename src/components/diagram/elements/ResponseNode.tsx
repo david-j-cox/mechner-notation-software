@@ -54,6 +54,17 @@ export function ResponseNode({
       >
         R
       </text>
+      {/* Subscript label below box */}
+      <text
+        x={cx}
+        y={y + height + 14}
+        textAnchor="middle"
+        fontSize={10}
+        fontFamily="sans-serif"
+        fill="#64748b"
+      >
+        {response.label}
+      </text>
       <title>{response.label}</title>
     </g>
   );

@@ -52,9 +52,14 @@ describe("StimulusNode", () => {
       <StimulusNode stimulus={stim} x={0} y={0} width={80} height={50} />
     );
     const texts = container.querySelectorAll("text");
-    // Should only have the main "S" text, no superscript
-    expect(texts).toHaveLength(1);
+    // Should have the main "S" text + subscript label, but no superscript
+    expect(texts).toHaveLength(2); // S + label
     expect(texts[0].textContent).toBe("S");
+    // No superscript element (superscript would be a 3rd text)
+    const supTexts = Array.from(texts).filter(
+      (t) => t.textContent !== "S" && t.textContent !== stim.label
+    );
+    expect(supTexts).toHaveLength(0);
   });
 
   it("renders tooltip with label", () => {

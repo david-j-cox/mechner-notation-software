@@ -1,7 +1,6 @@
 "use client";
 
 import type { Stimulus } from "@/model/types";
-import { getStimulusNotation } from "@/model/contingency";
 
 interface StimulusNodeProps {
   stimulus: Stimulus;
@@ -85,7 +84,17 @@ export function StimulusNode({
           {superscript}
         </text>
       )}
-      {/* Tooltip title */}
+      {/* Subscript label below box */}
+      <text
+        x={cx}
+        y={y + height + 14}
+        textAnchor="middle"
+        fontSize={10}
+        fontFamily="sans-serif"
+        fill="#64748b"
+      >
+        {stimulus.label}
+      </text>
       <title>{stimulus.label}</title>
     </g>
   );
