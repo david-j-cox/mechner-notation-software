@@ -75,7 +75,8 @@ export function useChat() {
         });
 
         if (!response.ok) {
-          throw new Error(`API error: ${response.status}`);
+          const errorBody = await response.text().catch(() => "");
+          throw new Error(`API error ${response.status}: ${errorBody || response.statusText}`);
         }
 
         const reader = response.body?.getReader();
@@ -157,6 +158,16 @@ export function useChat() {
               case "error": {
                 const msg = (data as Record<string, unknown>)?.message;
                 console.error("Chat error:", msg);
+                if (typeof msg === "string") {
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      id: `msg_err_${Date.now()}`,
+                      role: "assistant",
+                      content: `Error: ${msg}`,
+                    },
+                  ]);
+                }
                 break;
               }
 

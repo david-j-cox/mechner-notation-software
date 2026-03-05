@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
           iterations++;
 
           const response = await claude.messages.create({
-            model: "claude-sonnet-4-20250514",
+            model: process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514",
             max_tokens: 4096,
             system: SYSTEM_PROMPT,
             tools: toolDefinitions,
