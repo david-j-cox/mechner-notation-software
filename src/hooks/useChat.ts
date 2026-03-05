@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { ChatMessageData } from "@/components/chat/ChatMessage";
 import { useDiagramStore } from "./useDiagram";
 import type { DiagramMutation } from "@/ai/parseToolOutput";
@@ -33,6 +33,10 @@ export function useChat() {
   const [isLoading, setIsLoading] = useState(false);
   const { addElementWithId, updateElement, removeElement } = useDiagramStore();
 
+  // Full Anthropic message history (includes tool_use/tool_result blocks)
+  // Stored as ref to avoid re-renders and stale closure issues
+  const historyRef = useRef<unknown[] | null>(null);
+
   const applyMutation = useCallback(
     (mutation: DiagramMutation) => {
       switch (mutation.type) {
@@ -63,15 +67,22 @@ export function useChat() {
       setIsLoading(true);
 
       try {
+        const requestBody: Record<string, unknown> = {
+          messages: updatedMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        };
+
+        // Include full Anthropic history if we have it (preserves tool call IDs)
+        if (historyRef.current) {
+          requestBody.history = historyRef.current;
+        }
+
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: updatedMessages.map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-          }),
+          body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {
@@ -92,9 +103,8 @@ export function useChat() {
 
           buffer += decoder.decode(value, { stream: true });
 
-          // SSE spec: events are separated by double newlines
           const events = buffer.split("\n\n");
-          buffer = events.pop() ?? ""; // Keep incomplete last event
+          buffer = events.pop() ?? "";
 
           for (const event of events) {
             const lines = event.split("\n");
@@ -151,6 +161,15 @@ export function useChat() {
                   applyMutation(mutation);
                 } else {
                   console.warn("Invalid diagram mutation:", data);
+                }
+                break;
+              }
+
+              case "history": {
+                // Store the full Anthropic message history for next request
+                const historyData = data as Record<string, unknown>;
+                if (Array.isArray(historyData.messages)) {
+                  historyRef.current = historyData.messages;
                 }
                 break;
               }

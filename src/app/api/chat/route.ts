@@ -6,13 +6,9 @@ import { SYSTEM_PROMPT } from "@/ai/systemPrompt";
 import { toolDefinitions } from "@/ai/tools";
 import { processToolCall } from "@/ai/parseToolOutput";
 
-const chatMessageSchema = z.object({
-  role: z.enum(["user", "assistant"]),
-  content: z.string().min(1),
-});
-
 const requestBodySchema = z.object({
-  messages: z.array(chatMessageSchema).min(1),
+  messages: z.array(z.any()).min(1),
+  history: z.array(z.any()).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -39,19 +35,29 @@ export async function POST(req: NextRequest) {
       try {
         const claude = getClaudeClient();
 
-        // Convert to Anthropic message format
-        const anthropicMessages: Anthropic.MessageParam[] = body.messages.map(
-          (m) => ({
-            role: m.role,
-            content: m.content,
-          })
-        );
+        // Use full history if provided (includes tool_use/tool_result blocks),
+        // otherwise fall back to simple text messages for first turn
+        const anthropicMessages: Anthropic.MessageParam[] = body.history
+          ? [...body.history as Anthropic.MessageParam[]]
+          : body.messages.map((m: { role: string; content: string }) => ({
+              role: m.role as "user" | "assistant",
+              content: m.content,
+            }));
 
-        // Tool-use loop: keep calling Claude until it stops using tools
+        // Append the new user message (only if using history —
+        // the new message isn't in history yet)
+        if (body.history) {
+          const lastUserMsg = body.messages[body.messages.length - 1];
+          anthropicMessages.push({
+            role: "user",
+            content: lastUserMsg.content,
+          });
+        }
+
+        // Tool-use loop
         let continueLoop = true;
         let iterations = 0;
         const MAX_ITERATIONS = 20;
-
         let hasSentText = false;
 
         while (continueLoop && iterations < MAX_ITERATIONS) {
@@ -65,13 +71,11 @@ export async function POST(req: NextRequest) {
             messages: anthropicMessages,
           });
 
-          // Process response content blocks
           const toolResults: Anthropic.ToolResultBlockParam[] = [];
           let hasToolUse = false;
 
           for (const block of response.content) {
             if (block.type === "text") {
-              // Add paragraph break between text from different loop iterations
               if (hasSentText) {
                 send("text", { text: "\n\n" });
               }
@@ -97,12 +101,14 @@ export async function POST(req: NextRequest) {
             }
           }
 
+          // Always append assistant response to history
+          anthropicMessages.push({
+            role: "assistant",
+            content: response.content,
+          });
+
           if (hasToolUse) {
-            // Add assistant response + tool results for next iteration
-            anthropicMessages.push({
-              role: "assistant",
-              content: response.content,
-            });
+            // Append tool results for next iteration
             anthropicMessages.push({
               role: "user",
               content: toolResults,
@@ -116,6 +122,10 @@ export async function POST(req: NextRequest) {
           send("error", { message: "Too many tool-use iterations" });
         }
 
+        // Send the full message history back to the client so it can
+        // include it in the next request — this preserves tool_use and
+        // tool_result blocks that Claude needs for ID continuity
+        send("history", { messages: anthropicMessages });
         send("done", {});
       } catch (err) {
         const message = err instanceof Error ? err.message : "Unknown error";
