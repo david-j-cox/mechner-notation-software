@@ -1,5 +1,7 @@
 "use client";
 
+import ReactMarkdown from "react-markdown";
+
 export interface ChatMessageData {
   id: string;
   role: "user" | "assistant";
@@ -22,7 +24,13 @@ export function ChatMessage({ message }: ChatMessageProps) {
             : "bg-slate-100 text-slate-800"
         }`}
       >
-        {message.content}
+        {isUser ? (
+          message.content
+        ) : (
+          <div className="prose prose-sm prose-slate max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">
+            <ReactMarkdown>{message.content}</ReactMarkdown>
+          </div>
+        )}
       </div>
     </div>
   );

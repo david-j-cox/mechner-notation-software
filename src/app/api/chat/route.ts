@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
         let iterations = 0;
         const MAX_ITERATIONS = 20;
 
+        let hasSentText = false;
+
         while (continueLoop && iterations < MAX_ITERATIONS) {
           iterations++;
 
@@ -69,7 +71,12 @@ export async function POST(req: NextRequest) {
 
           for (const block of response.content) {
             if (block.type === "text") {
+              // Add paragraph break between text from different loop iterations
+              if (hasSentText) {
+                send("text", { text: "\n\n" });
+              }
               send("text", { text: block.text });
+              hasSentText = true;
             } else if (block.type === "tool_use") {
               hasToolUse = true;
               const result = processToolCall(block.name, block.input);
