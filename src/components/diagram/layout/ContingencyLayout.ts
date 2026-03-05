@@ -50,6 +50,17 @@ const COLUMNS = {
   consequence: 3,
 };
 
+export function getColumnCenterX(col: number): number {
+  return PADDING + col * (NODE_WIDTH + COL_GAP) + NODE_WIDTH / 2;
+}
+
+export const COLUMN_HEADERS = [
+  { label: "MO", col: COLUMNS.mo },
+  { label: "Antecedent", col: COLUMNS.antecedent },
+  { label: "Behavior", col: COLUMNS.behavior },
+  { label: "Consequence", col: COLUMNS.consequence },
+];
+
 interface ElementEdges {
   left: { x: number; y: number };
   right: { x: number; y: number };

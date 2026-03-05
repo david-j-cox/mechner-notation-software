@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { MechnerDiagram } from "@/model/types";
 import { findElementById } from "@/model/contingency";
-import { computeLayout } from "./layout/ContingencyLayout";
+import { computeLayout, getColumnCenterX, COLUMN_HEADERS } from "./layout/ContingencyLayout";
 import { StimulusNode } from "./elements/StimulusNode";
 import { ResponseNode } from "./elements/ResponseNode";
 import { ArrowConnector } from "./elements/ArrowConnector";
@@ -38,15 +38,19 @@ export function MechnerCanvas({ diagram }: MechnerCanvasProps) {
       className="bg-white"
     >
       {/* Column headers */}
-      <text x={120} y={20} textAnchor="middle" fontSize={11} fill="#94a3b8" fontFamily="sans-serif">
-        Antecedent
-      </text>
-      <text x={320} y={20} textAnchor="middle" fontSize={11} fill="#94a3b8" fontFamily="sans-serif">
-        Behavior
-      </text>
-      <text x={520} y={20} textAnchor="middle" fontSize={11} fill="#94a3b8" fontFamily="sans-serif">
-        Consequence
-      </text>
+      {COLUMN_HEADERS.map(({ label, col }) => (
+        <text
+          key={label}
+          x={getColumnCenterX(col)}
+          y={20}
+          textAnchor="middle"
+          fontSize={11}
+          fill="#94a3b8"
+          fontFamily="sans-serif"
+        >
+          {label}
+        </text>
+      ))}
 
       {layout.contingencies.map((cont) => (
         <g key={cont.id}>
